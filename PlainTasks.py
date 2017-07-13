@@ -1073,3 +1073,25 @@ class PlainTasksHover(sublime_plugin.ViewEventListener):
         self.view.sel().add(sublime.Region(int(at)))
         case[action]()
         self.view.hide_popup()
+
+
+class PlainTasksTagList(sublime_plugin.WindowCommand):
+    TAG = r'@\w+'
+
+    def run(self):
+        from collections import Counter
+        self.view = self.window.active_view()
+        find_results = self.view.find_all(self.TAG)
+        if not find_results:
+            sublime.status_message('No tags in document')
+            return
+
+        find_results = [self.view.substr(region) for region in find_results]
+        choices_counter = Counter(find_results)
+        self.sorted_tags = sorted(choices_counter.items(), key=lambda x: -x[1])
+
+        self.window.show_quick_panel(["{}: {}".format(choice, count) for choice, count in self.sorted_tags], self.fold_tag_by_index)
+
+    def fold_tag_by_index(self, selection):
+        print("Selected {}".format(self.sorted_tags[selection]))
+        self.exec_folding(self.add_projects_and_notes([self.sorted_tags[selection][0]]))
